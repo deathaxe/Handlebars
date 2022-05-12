@@ -33,102 +33,54 @@ variables:
   NOT_IDENTIFIER_NOT_SPACE:     '[!"#%&''()*+,./;<=>@\[\\\]^`{|}~]'
   NOT_IDENTIFIER_NOT_SEPARATOR: '[!"#%&''()*+,;<=>@\[\\\]^`{|}~]'
   NUMBER:       ([+-]?\d+(?:\.\d+)?)
-  BOOLEAN:      (?i)(?:(true)|(false))
+  BOOLEAN:      (?i:(true)|(false))
 
   LOOKAHEAD:         '[~}\s)/.|=]'
   LITERAL_LOOKAHEAD: '[~}\s)]'
 
 contexts:
-  prototype:
-    - include: comment-sublime-syntax-test
-
   main:
     - match: ''
       push: HTML.sublime-syntax
       with_prototype:
-      - include: comment-sublime-syntax-test
+        - include: handlebars
 
-      - include: comment-block-explicit
-      - include: comment-block
+  handlebars:
+    - include: handlebars-comment-block-explicit
+    - include: handlebars-comment-block
+    - include: handlebars-escaped-stache
+    - include: handlebars-tag-block-raw
+    #- include: handlebars-tag-raw
+    - include: handlebars-tag-unescaped
+    - include: handlebars-tag-partially-one-line
+    - include: handlebars-tag-one-line
+    - include: handlebars-tag
 
-      - include: escaped-stache
-      - include: tag-block-raw
-      #- include: tag-raw
-      - include: tag-unescaped
-      - include: tag-partially-one-line
-      - include: tag-one-line
-      - include: tag
-
-  # FOR SUBLIME SYNTAX TESTING
-  comment-sublime-syntax-test:
-    - match: ^\s*(\|\|) #|\—\—|[–-]<|\[\[|\]\]|\]\[|\[\]|::|\*\*|>>|<<|\.\.|==|__|~~|\\\\|//|##)
-      captures:
-        1: punctuation.definition.comment.sublime-syntax-test
-      push:
-      - meta_scope: source.sublime-syntax-test
-
-      - match: ' +(?!\n)'
-        scope: meta.test.sublime-syntax-test
-
-      - match: '[^^<].*(?= *\n)'
-        scope: meta.test.sublime-syntax-test comment.test.sublime-syntax-test
-
-      - match: (\^+)(?=\s*-)|(\^+)|(<-)(?=\s*-)|(<-)
-        captures:
-          1: constant.character.test.negative.column.sublime-syntax-test
-          2: constant.character.test.positive.column.sublime-syntax-test
-          3: constant.character.test.negative.comment-start.sublime-syntax-test
-          4: constant.character.test.positive.comment-start.sublime-syntax-test
-        push:
-        - meta_scope: meta.test.sublime-syntax-test
-
-        - match: -\s*\w[\w.-]+
-          scope: variable.other.scope.negative.sublime-syntax-test
-
-        - match: '[\w-]\S+'
-          scope: variable.other.scope.positive.sublime-syntax-test
-
-        - match: '[^\w\s-][\w -]*'
-          scope: comment.test.sublime-syntax-test
-
-        - match: '(?= *\n)'
-          pop: true
-      - match: ' *\n'
-        scope: meta.test.sublime-syntax-test meta.test.after.sublime-syntax-test
-        pop: true
-
-
-  comment-block:
-    - match: ({{(~?))(!)
+  handlebars-comment-block:
+    - match: '{{~?!'
       scope: punctuation.definition.comment.block.begin
-      # captures:
-      #   2: constant.character.comment.start
       push:
       - meta_scope: comment.block
 
-      - match: ((~?)}})
+      - match: '~?}}'
         scope: punctuation.definition.comment.block.end
         pop: true
 
-      - include: comment-annotation
+      - include: handlebars-comment-annotation
 
-  comment-block-explicit:
-    - match: ({{(~?))(!--)
+  handlebars-comment-block-explicit:
+    - match: '{{~?!--'
       scope: punctuation.definition.comment.block.explicit.begin
-      # captures:
-      #   2: constant.character.comment.start
       push:
       - meta_scope: comment.block.explicit
 
-      - match: (--)((~?)}})
+      - match: '--~?}}'
         scope: punctuation.definition.comment.block.explicit.end
-        # captures:
-        #  1: constant.character.comment.block.end
         pop: true
 
-      - include: comment-annotation
+      - include: handlebars-comment-annotation
 
-  comment-annotation:
+  handlebars-comment-annotation:
     - match: \s((@)(\w+))
       captures:
         2: constant.character.annotation
@@ -136,12 +88,12 @@ contexts:
       scope: meta.keyword.annotation
 
 
-  escaped-stache:
+  handlebars-escaped-stache:
     - match: \\{
       scope: constant.character.escape
 
 
-  tag-raw:
+  handlebars-tag-raw:
     - match: (?={{{{/?)
       push:
       - meta_scope: meta.tag.template.raw #light-gray
@@ -156,7 +108,7 @@ contexts:
       - match: (?<=}}}})
         pop: true
 
-  tag-unescaped:
+  handlebars-tag-unescaped:
     - match: (?={{~?{[^{])
       push:
       - meta_scope: meta.tag.template.unescaped #light-gray
@@ -173,7 +125,7 @@ contexts:
       - match: (?<=}~}})
         pop: true
 
-  tag:
+  handlebars-tag:
     - match: (?={{[^{])
       push:
       - meta_scope: meta.tag.template #light-gray
@@ -194,7 +146,7 @@ contexts:
 
   # Match tags that have the open tag and two identifiers (indicating that the tag is not just a
   # path, but actually a helper).
-  tag-partially-one-line:
+  handlebars-tag-partially-one-line:
     - match: (?={{TAG_BEGIN}} *(?!this|else){{PATH_DOTTED_OR_SLASHED}}[^~}]*$)
       push:
       - meta_scope: meta.tag.template.partially-one-line
@@ -216,31 +168,7 @@ contexts:
         - include: -else-
         - include: -tag-guts-
 
-  # Match tags that have the open tag and two identifiers (indicating that the tag is not just a
-  # path, but actually a helper).
-  tag-partial-one-line:
-    - match: (?={{TAG_BEGIN}} *(?!this|else){{PATH_DOTTED_OR_SLASHED}} +[^/.\[}][^~}]+$)
-      push:
-      - meta_scope: meta.tag.template.partial-one-line
-
-      - include: -tag-end-
-      - include: -after-tag-end-pop-
-
-      - match: (?:{{TAG_BEGIN}}) *({{PATH_DOTTED_OR_SLASHED}}) # TODO: match individual parts
-        captures:
-          1: punctuation.definition.tag.template.begin
-          3: entity.name.function.helper # variable.function
-        push:
-        - include: -tag-guts-
-
-      - match: (?:{{TAG_BEGIN}})
-        captures:
-          1: punctuation.definition.tag.template.begin
-        push:
-        - include: -else-
-        - include: -tag-guts-
-
-  tag-one-line:
+  handlebars-tag-one-line:
     # - match: (?={{TAG_BEGIN}} *(?!this|else){{PATH_DOTTED_OR_SLASHED}} +[^./{{TAG_END_CHAR}}]{{ANY_CHAR}}{{TAG_END}})
     # - match: (?={{TAG_BEGIN}} *(?!this|else){{PATH_DOTTED_OR_SLASHED}} +(\.(?=[ ~}])|[^./ ~}]){{ANY_CHAR}}{{TAG_END}})
     - match: (?={{TAG_BEGIN}} *(?!this|else){{PATH_DOTTED_OR_SLASHED}} +(?!\/ *.|\.[^. ~}]|[ ~}]){{ANY_CHAR}}{{TAG_END}})
@@ -285,7 +213,7 @@ contexts:
     - include: -path-
     - include: -path-id-
 
-  tag-block-raw:
+  handlebars-tag-block-raw:
     # Unmatched Block Close Tag
     - match: ({{{{~?/)
       scope: invalid.illegal.missing-raw-block-open-tag
