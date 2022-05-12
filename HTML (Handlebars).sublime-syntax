@@ -185,8 +185,7 @@ contexts:
     - include: immediately-pop
 
   handlebars-embedded:
-    - include: handlebars-comment-block-explicit
-    - include: handlebars-comment-block
+    - include: handlebars-comments
     - include: handlebars-escaped-stache
     - include: handlebars-tag-block-raw
     #- include: handlebars-tag-raw
@@ -195,52 +194,51 @@ contexts:
     - include: handlebars-tag-one-line
     - include: handlebars-tag
 
-  handlebars-comment-block:
-    - match: '{{~?!'
-      scope: punctuation.definition.comment.block.begin
-      push:
-      - meta_scope: comment.block
+###[ HANDLEBARS COMMENTS ]########################################################
 
-      - match: '~?}}'
-        scope: punctuation.definition.comment.block.end
-        pop: true
-
-      - include: handlebars-comment-annotation
-
-  handlebars-comment-block-explicit:
+  handlebars-comments:
     - match: '{{~?!--'
-      scope: punctuation.definition.comment.block.explicit.begin
-      push:
-      - meta_scope: comment.block.explicit
+      scope: punctuation.definition.comment.block.explicit.begin.handlebars
+      push: handlebars-comment-explicit-content
+    - match: '{{~?!'
+      scope: punctuation.definition.comment.block.begin.handlebars
+      push: handlebars-comment-content
 
-      - match: '--~?}}'
-        scope: punctuation.definition.comment.block.explicit.end
-        pop: true
+  handlebars-comment-explicit-content:
+    - meta_scope: comment.block.explicit.handlebars
+    - match: '--~?}}'
+      scope: punctuation.definition.comment.block.explicit.end.handlebars
+      pop: true
+    - include: handlebars-comment-annotation
 
-      - include: handlebars-comment-annotation
+  handlebars-comment-content:
+    - meta_scope: comment.block.handlebars
+    - match: '~?}}'
+      scope: punctuation.definition.comment.block.end.handlebars
+      pop: true
+    - include: handlebars-comment-annotation
 
   handlebars-comment-annotation:
-    - match: \s((@)(\w+))
+    - match: (@)\w+\b
+      scope: variable.annotation.handlebars
       captures:
-        2: constant.character.annotation
-        3: keyword.annotation
-      scope: meta.keyword.annotation
-
+        1: punctuation.definition.annotation.handlebars
 
   handlebars-escaped-stache:
     - match: \\{
-      scope: constant.character.escape
+      scope: constant.character.escape.handlebars
 
+###[ HANDLEBARS TAGS ]############################################################
 
   handlebars-tag-raw:
     - match: (?={{{{/?)
       push:
-      - meta_scope: meta.tag.template.raw #light-gray
+      - meta_scope: meta.tag.template.raw.handlebars
 
       - match: ({{{{)(/)?
         captures:
-          1: punctuation.definition.tag.template.begin
-          2: constant.character.block.close
+          1: punctuation.definition.tag.template.begin.handlebars
+          2: constant.character.block.close.handlebars
         push:
         - include: -tag-guts-
 
@@ -250,11 +248,11 @@ contexts:
   handlebars-tag-unescaped:
     - match: (?={{~?{[^{])
       push:
-      - meta_scope: meta.tag.template.unescaped #light-gray
+      - meta_scope: meta.tag.template.unescaped.handlebars
 
       - match: (?:{{TAG_BEGIN}})
         captures:
-          1: punctuation.definition.tag.template.begin
+          1: punctuation.definition.tag.template.begin.handlebars
         push:
         - include: -tag-guts-
 
@@ -267,7 +265,7 @@ contexts:
   handlebars-tag:
     - match: (?={{[^{])
       push:
-      - meta_scope: meta.tag.template #light-gray
+      - meta_scope: meta.tag.template.handlebars
 
       - include: -tag-end-
       - include: -after-tag-end-pop-
@@ -277,7 +275,7 @@ contexts:
 
       - match: (?:{{TAG_BEGIN}})
         captures:
-          1: punctuation.definition.tag.template.begin
+          1: punctuation.definition.tag.template.begin.handlebars
         push:
         - include: -else- # `else` only works between double mustaches
         - include: -tag-guts-
@@ -288,21 +286,21 @@ contexts:
   handlebars-tag-partially-one-line:
     - match: (?={{TAG_BEGIN}} *(?!this|else){{PATH_DOTTED_OR_SLASHED}}[^~}]*$)
       push:
-      - meta_scope: meta.tag.template.partially-one-line
+      - meta_scope: meta.tag.template.partially-one-line.handlebars
 
       - include: -tag-end-
       - include: -after-tag-end-pop-
 
       - match: (?:{{TAG_BEGIN}}) *({{PATH_DOTTED_OR_SLASHED}}) # TODO: match individual parts
         captures:
-          1: punctuation.definition.tag.template.begin
+          1: punctuation.definition.tag.template.begin.handlebars
           3: entity.name.function.helper # variable.function
         push:
         - include: -tag-guts-
 
       - match: (?:{{TAG_BEGIN}})
         captures:
-          1: punctuation.definition.tag.template.begin
+          1: punctuation.definition.tag.template.begin.handlebars
         push:
         - include: -else-
         - include: -tag-guts-
@@ -312,14 +310,14 @@ contexts:
     # - match: (?={{TAG_BEGIN}} *(?!this|else){{PATH_DOTTED_OR_SLASHED}} +(\.(?=[ ~}])|[^./ ~}]){{ANY_CHAR}}{{TAG_END}})
     - match: (?={{TAG_BEGIN}} *(?!this|else){{PATH_DOTTED_OR_SLASHED}} +(?!\/ *.|\.[^. ~}]|[ ~}]){{ANY_CHAR}}{{TAG_END}})
       push:
-      - meta_scope: meta.tag.template.singleline
+      - meta_scope: meta.tag.template.singleline.handlebars
 
       - include: -tag-end-
       - include: -after-tag-end-pop-
 
       - match: (?:{{TAG_BEGIN}}) *({{PATH_DOTTED_OR_SLASHED}}) # +([^ ~}]{{ANY_CHAR}}){{TAG_END}}
         captures:
-          1: punctuation.definition.tag.template.begin
+          1: punctuation.definition.tag.template.begin.handlebars
           3: entity.name.function.helper # variable.function
         push:
         - include: -tag-guts-
@@ -355,7 +353,7 @@ contexts:
   handlebars-tag-block-raw:
     # Unmatched Block Close Tag
     - match: ({{{{~?/)
-      scope: invalid.illegal.missing-raw-block-open-tag
+      scope: invalid.illegal.missing-raw-block-open-tag.handlebars
 
     # Before Block Open Tag
     - match: (?={{{{~?[^/])
@@ -363,9 +361,9 @@ contexts:
 
       # Block Open Tag - Begin
       - match: ({{{{(~?))(?=[^/])
-        scope: punctuation.definition.tag.template.begin
+        scope: punctuation.definition.tag.template.begin.handlebars
         push:
-        - meta_scope: meta.tag.template
+        - meta_scope: meta.tag.template.handlebars
 
         # Pop Before Tag End
         - match: (?=\s*~?}}}})
@@ -373,12 +371,12 @@ contexts:
 
         # Invalid Chars
         - match: ({{NOT_IDENTIFIER_NOT_SPACE}}+)
-          scope: invalid.illegal.expected-identifier
+          scope: invalid.illegal.expected-identifier.handlebars
           pop: true
 
         # Helper Name
         - match: \s*({{IDENTIFIER}}(?:\s*[./]{{IDENTIFIER}})*) # TODO: match individual parts
-          scope: entity.name.function.helper # variable.function
+          scope: entity.name.function.helper # variable.function.handlebars
           push:
           # Pop Before Tag End
           - match: (?=\s*~?}}}})
@@ -394,22 +392,22 @@ contexts:
 
       # Block Open Tag - End
       - match: \s*(~?)(}}}})
-        scope: meta.tag.template
+        scope: meta.tag.template.handlebars
         captures:
-          2: punctuation.definition.tag.template.end
+          2: punctuation.definition.tag.template.end.handlebars
         set:
 
         # Block Close Tag - Begin
         - match: ({{{{(~?))(\/)
           captures:
-            1: punctuation.definition.tag.template.begin
-            3: constant.character.block.close
+            1: punctuation.definition.tag.template.begin.handlebars
+            3: constant.character.block.close.handlebars
           set:
-          - meta_scope: meta.tag.template.block.raw
+          - meta_scope: meta.tag.template.block.raw.handlebars
 
           # `raw` Helper
           - match: \braw(?=[{{TAG_END_CHAR}}])
-            scope: entity.name.function.helper.builtin
+            scope: entity.name.function.helper.builtin.handlebars
             push:
             # Pop Before Tag End
             - match: (?=\s*~?}}}})
@@ -420,12 +418,12 @@ contexts:
             # Invalid Other Chars
             - match: \s*({{ANY_CHAR}})(?=\s*~?}}}})
               captures:
-                1: invalid.illegal.expected-tag-end
+                1: invalid.illegal.expected-tag-end.handlebars
               pop: true
 
           # Other Helper
           - match: (?:{{PATH_DOTTED_OR_SLASHED}})
-            scope: entity.name.function.helper
+            scope: entity.name.function.helper.handlebars
             push:
             # Pop Before Tag End
             - match: (?=\s*~?}}}})
@@ -436,19 +434,19 @@ contexts:
             # Invalid Other Chars
             - match: \s*({{ANY_CHAR}})(?=\s*~?}}}})
               captures:
-                1: invalid.illegal.expected-tag-end
+                1: invalid.illegal.expected-tag-end.handlebars
               pop: true
 
           # Block Close Tag - End
           - match: \s*(~?)(}}}})
             captures:
-              2: punctuation.definition.tag.template.end
+              2: punctuation.definition.tag.template.end.handlebars
             pop: true
 
           # Bad Tag End (Wrong # of Mustaches)
           - match: \s*(~?}+)
             captures:
-              1: invalid.illegal.expected-four-mustaches
+              1: invalid.illegal.expected-four-mustaches.handlebars
             pop: true
 
       # Pop Before Invalid Char
@@ -460,12 +458,12 @@ contexts:
   -tag-block-open-:
     - match: (?:{{TAG_BEGIN}})(\^)
       captures:
-        1: punctuation.definition.tag.template.begin
-        3: constant.character.block.inverted.open
+        1: punctuation.definition.tag.template.begin.handlebars
+        3: constant.character.block.inverted.open.handlebars
       push:
-      #- meta_scope: meta.tag.template.block
+      #- meta_scope: meta.tag.template.block.handlebars
       - match: ({{IDENTIFIER}}(?:\s*[./]{{IDENTIFIER}})*) # TODO: match individual parts
-        scope: entity.name.function.helper # variable.function
+        scope: entity.name.function.helper # variable.function.handlebars
         set:
         - include: -tag-block-guts-
 
@@ -473,14 +471,14 @@ contexts:
 
     - match: (?:{{TAG_BEGIN}})(>)
       captures:
-        1: punctuation.definition.tag.template.begin
-        3: constant.character.partial
+        1: punctuation.definition.tag.template.begin.handlebars
+        3: constant.character.partial.handlebars
       push:
-      #- meta_scope: meta.tag.template.block
+      #- meta_scope: meta.tag.template.block.handlebars
       - include: -subexpression-
       - include: -data-var-
       - match: ({{IDENTIFIER}}(?:\s*[./]{{IDENTIFIER}})*) # TODO: match individual parts
-        scope: entity.name.function.helper # variable.function
+        scope: entity.name.function.helper # variable.function.handlebars
         set:
         - include: -tag-block-guts-
 
@@ -488,15 +486,15 @@ contexts:
 
     - match: (?:{{TAG_BEGIN}})(#)(>)
       captures:
-        1: punctuation.definition.tag.template.begin
-        3: constant.character.block.open
-        4: constant.character.partial
+        1: punctuation.definition.tag.template.begin.handlebars
+        3: constant.character.block.open.handlebars
+        4: constant.character.partial.handlebars
       push:
-      #- meta_scope: meta.tag.template.block
+      #- meta_scope: meta.tag.template.block.handlebars
       - include: -subexpression-
       - include: -data-var-
       - match: ({{IDENTIFIER}}(?:\s*[./]{{IDENTIFIER}})*) # TODO: match individual parts
-        scope: entity.name.function.helper # variable.function
+        scope: entity.name.function.helper # variable.function.handlebars
         set:
         - include: -tag-block-guts-
 
@@ -504,13 +502,13 @@ contexts:
 
     - match: (?:{{TAG_BEGIN}})(#)(\*)
       captures:
-        1: punctuation.definition.tag.template.begin
-        3: constant.character.block.open
-        4: constant.character.inline-partial
+        1: punctuation.definition.tag.template.begin.handlebars
+        3: constant.character.block.open.handlebars
+        4: constant.character.inline-partial.handlebars
       push:
-      #- meta_scope: meta.tag.template.block
+      #- meta_scope: meta.tag.template.block.handlebars
       - match: ({{IDENTIFIER}}(?:\s*[./]{{IDENTIFIER}})*) # TODO: match individual parts
-        scope: entity.name.function.helper # variable.function
+        scope: entity.name.function.helper # variable.function.handlebars
         set:
         - include: -tag-block-guts-
 
@@ -518,10 +516,10 @@ contexts:
 
     - match: (?:{{TAG_BEGIN}})(#)
       captures:
-        1: punctuation.definition.tag.template.begin
-        3: constant.character.block.open
+        1: punctuation.definition.tag.template.begin.handlebars
+        3: constant.character.block.open.handlebars
       push:
-      #- meta_scope: meta.tag.template.block
+      #- meta_scope: meta.tag.template.block.handlebars
       - match: \b(?:(if)|(unless))(?=\s)
         captures:
           1: keyword.control.conditional.if # keyword.control.conditional.if
@@ -531,18 +529,18 @@ contexts:
 
       - match: \b(?:(each)|(each-in)|(with))(?=\s)
         captures:
-          1: keyword.control.conditional.each
-          2: keyword.control.conditional.each-in
-          3: keyword.control.conditional.with
+          1: keyword.control.conditional.each.handlebars
+          2: keyword.control.conditional.each-in.handlebars
+          3: keyword.control.conditional.with.handlebars
         set:
-        # - meta_scope: default
+        # - meta_scope: default.handlebars
         # - include: -named-parameter-
         - include: -tag-block-guts-
 
       - match: ({{IDENTIFIER}}(?:\s*[./]{{IDENTIFIER}})*) # TODO: match individual parts
-        scope: entity.name.function.helper # variable.function
+        scope: entity.name.function.helper # variable.function.handlebars
         set:
-        # - meta_scope: default
+        # - meta_scope: default.handlebars
         - include: -tag-block-guts-
 
       - include: -tag-end-
@@ -550,22 +548,22 @@ contexts:
   -tag-block-close-:
     - match: (?:{{TAG_BEGIN}})(/)
       captures:
-        1: punctuation.definition.tag.template.begin
-        3: constant.character.block.close
+        1: punctuation.definition.tag.template.begin.handlebars
+        3: constant.character.block.close.handlebars
       push:
 
       - match: (?:(each)|(each-in)|(if)|(unless)|(with))(?=[{{TAG_END_CHAR}}])
         captures:
-          1: keyword.control.loop.each
-          2: keyword.control.loop.each-in
-          3: keyword.control.conditional.if
-          4: keyword.control.conditional.unless
-          5: keyword.control.context.with
+          1: keyword.control.loop.each.handlebars
+          2: keyword.control.loop.each-in.handlebars
+          3: keyword.control.conditional.if.handlebars
+          4: keyword.control.conditional.unless.handlebars
+          5: keyword.control.context.with.handlebars
         set:
         - include: -expect-tag-end-
 
       - match: ({{IDENTIFIER}}(?:\s*[./]{{IDENTIFIER}})*) # TODO: match individual parts
-        scope: entity.name.function.helper.close
+        scope: entity.name.function.helper.close.handlebars
         set:
         - include: -expect-tag-end-
 
@@ -587,7 +585,7 @@ contexts:
 
   -else-:
     - match: \b(else)(?=[{{TAG_END_CHAR}}])
-      scope: keyword.control.conditional.else
+      scope: keyword.control.conditional.else.handlebars
       set:
       #- include: -tag-end-
       - include: -if-
@@ -595,7 +593,7 @@ contexts:
 
   -if-:
     - match: \b(if)(?=[{{TAG_END_CHAR}}])
-      scope: keyword.control.conditional.if
+      scope: keyword.control.conditional.if.handlebars
       set:
       #- include: -expect-identifier-one-
       - include: -subexpression-end-
@@ -605,10 +603,10 @@ contexts:
       - include: -path-
       - include: -path-id-
       - match: ({{TAG_END}})
-        scope: invalid.illegal.expected-condition
+        scope: invalid.illegal.expected-condition.handlebars
         pop: true
       - match: ({{NOT_TAG_END}})
-        scope: invalid.illegal.expected-condition
+        scope: invalid.illegal.expected-condition.handlebars
         set:
         - include: -expect-tag-end-
 
@@ -616,9 +614,9 @@ contexts:
     - match: ({{IDENTIFIER}})\s*(=) #\s*(?=['"]|{{IDENTIFIER_CHAR}})
       captures:
         1: meta.argument.key-value.key variable.parameter.helper
-        2: punctuation.separator.key-value
+        2: punctuation.separator.key-value.handlebars
       push:
-      - meta_scope: meta.argument.key-value
+      - meta_scope: meta.argument.key-value.handlebars
 
       - include: -before-tag-end-pop-
 
@@ -629,7 +627,7 @@ contexts:
       # Subexpression
       - match: (?=\()
         push:
-        - meta_scope: meta.argument.key-value.value
+        - meta_scope: meta.argument.key-value.value.handlebars
         - include: -subexpression-
         - match: (?<=\))
           pop: true
@@ -637,7 +635,7 @@ contexts:
       # String (Double Quotes)
       - match: (?=\s*")
         push:
-        - meta_scope: meta.argument.key-value.value
+        - meta_scope: meta.argument.key-value.value.handlebars
         - include: -string-quoted-double-
         - match: (?<=")
           pop: true
@@ -645,7 +643,7 @@ contexts:
       # String (Single Quotes)
       - match: (?=\s*')
         push:
-        - meta_scope: meta.argument.key-value.value
+        - meta_scope: meta.argument.key-value.value.handlebars
         - include: -string-quoted-single-
         - match: (?<=')
           pop: true
@@ -653,7 +651,7 @@ contexts:
       # Data Variable
       - match: (?=\s*@)
         push:
-        - meta_scope: meta.argument.key-value.value
+        - meta_scope: meta.argument.key-value.value.handlebars
         - include: -data-var-
         - match: (?=[){{TAG_END_CHAR}}])
           pop: true
@@ -674,7 +672,7 @@ contexts:
       # Identifier
       - match: \s*(?={{IDENTIFIER_CHAR}})
         set:
-        - meta_scope: meta.argument.key-value meta.argument.key-value.value
+        - meta_scope: meta.argument.key-value meta.argument.key-value.value.handlebars
         - match: (?={{NON_IDENTIFIER_CHAR}})
           pop: true
         - include: -identifier-
@@ -682,7 +680,7 @@ contexts:
       # Path
       - match: (?=\s*\.)
         push:
-        - meta_scope: meta.argument.key-value.value
+        - meta_scope: meta.argument.key-value.value.handlebars
         - match: (?=\s*\.)
           push:
           - include: -path-
@@ -693,7 +691,7 @@ contexts:
 
   -named-parameter-:
     - match: \bas(?=\s)
-      scope: keyword.control.operator.as
+      scope: keyword.control.operator.as.handlebars
       push:
       - match: (?<=\|)
         pop: true
@@ -701,31 +699,31 @@ contexts:
       - include: -after-tag-end-pop-
 
       - match: (?:[^|{{TAG_END_CHAR}}]+)
-        scope: invalid.illegal.expected-named-parameter-pipe
+        scope: invalid.illegal.expected-named-parameter-pipe.handlebars
         pop: true
 
       - match: \|
-        scope: keyword.operator.assignment.named-parameter
+        scope: keyword.operator.assignment.named-parameter.handlebars
         push:
-        - meta_scope: meta.named-parameter
+        - meta_scope: meta.named-parameter.handlebars
         - match: \|
-          scope: keyword.operator.assignment.named-parameter
+          scope: keyword.operator.assignment.named-parameter.handlebars
           pop: true
         - match: ({{TAG_END}})
-          scope: invalid.illegal.expected-named-parameter-pipe
+          scope: invalid.illegal.expected-named-parameter-pipe.handlebars
           pop: true
         - match: ({{IDENTIFIER}})
-          scope: variable.other.readwrite.named-parameter
+          scope: variable.other.readwrite.named-parameter.handlebars
 
 
 
   -path-:
     # Dot(s)
     - match: \.\.?(?={{LOOKAHEAD}})
-      scope: meta.path-traversal -path-
+      scope: meta.path-traversal -path-.handlebars
       set:
-      #- meta_content_scope: meta.path-traversal -path--after-
-      - meta_content_scope: -path--after-
+      #- meta_content_scope: meta.path-traversal -path--after-.handlebars
+      - meta_content_scope: -path--after-.handlebars
 
       # Subsequent Slash
       - include: -path-slash-
@@ -739,9 +737,9 @@ contexts:
   -path-pop-:
     # Dot(s)
     - match: \.\.?(?={{LOOKAHEAD}})
-      scope: meta.path-traversal -path-
+      scope: meta.path-traversal -path-.handlebars
       set:
-      - meta_content_scope: meta.path-traversal -path--after-
+      - meta_content_scope: meta.path-traversal -path--after-.handlebars
 
       # Subsequent Slash
       - include: -path-slash-
@@ -755,22 +753,22 @@ contexts:
 
     # Slash
     - match: \s*/
-      scope: meta.path-traversal -path-slash-
+      scope: meta.path-traversal -path-slash-.handlebars
       set:
-      - meta_content_scope: meta.path-traversal -path-slash-
+      - meta_content_scope: meta.path-traversal -path-slash-.handlebars
       - include: -before-tag-end-pop-
 
       # Dot Followed By Not Dot
       - match: (\s*)(\.[^./{{TAG_END_CHAR}}])
         captures:
-          1: meta.path-traversal
-          2: invalid.illegal.invalid-path
+          1: meta.path-traversal.handlebars
+          2: invalid.illegal.invalid-path.handlebars
         set:
         - include: -tag-guts-
 
       # Dots (Again)
       - match: \s*(?=\.\.?)
-        scope: meta.path-traversal # bridge the gap between `/` and `.`
+        scope: meta.path-traversal # bridge the gap between `/` and `.`.handlebars
         set: -path-
 
       # Identifiers
@@ -786,7 +784,7 @@ contexts:
 
       # BAD Subsequent Slash
       - match: \s*/
-        scope: invalid.illegal.invalid-path -path-slash-
+        scope: invalid.illegal.invalid-path -path-slash-.handlebars
         pop: true
 
       # BAD Tag End
@@ -797,7 +795,7 @@ contexts:
 
       # BAD Anything else
       - match: \S
-        scope: invalid.illegal.invalid-path-character -path-slash-
+        scope: invalid.illegal.invalid-path-character -path-slash-.handlebars
         pop: true
 
   -path-id-:
@@ -806,29 +804,29 @@ contexts:
     - include: -before-tag-end-pop-
 
     - match: this(?={{SEPARATOR}})
-      scope: variable.language.this -path-id--this-
+      scope: variable.language.this -path-id--this-.handlebars
       push:
-      - meta_content_scope: -path-id--this-
+      - meta_content_scope: -path-id--this-.handlebars
       - include: -path-id-after-
 
     - match: (?=-?\d+(\.\d+)?)
       push:
-      - meta_scope: variable.parameter.helper
+      - meta_scope: variable.parameter.helper.handlebars
       - include: -number-
       - match: (?=\D)
         pop: true
 
     - match: (?=true|false)
       push:
-      - meta_scope: variable.parameter.helper
+      - meta_scope: variable.parameter.helper.handlebars
       - include: -boolean-
       - match: (?=\W)
         pop: true
 
     - match: ({{IDENTIFIER}})(?={{SEPARATOR}})
-      scope: variable.other.readwrite.path -path-id--id-
+      scope: variable.other.readwrite.path -path-id--id-.handlebars
       push:
-      - meta_content_scope: -path-id--id--after- #bright.red-orange -path-id--id-
+      - meta_content_scope: -path-id--id--after- #bright.red-orange -path-id--id-.handlebars
       - include: -before-tag-end-pop-
       - match: (?=\s*\.this)
         pop: true
@@ -836,17 +834,17 @@ contexts:
 
     - match: \[
       push:
-      - meta_scope: variable.other.readwrite.path -path-id--bracketed-
+      - meta_scope: variable.other.readwrite.path -path-id--bracketed-.handlebars
       - match: \]
         set:
-        - meta_content_scope: -path-id--bracketed--after-
+        - meta_content_scope: -path-id--bracketed--after-.handlebars
         - include: -path-id-after-
 
     - match: ({{IDENTIFIER}}{{NOT_IDENTIFIER_NOT_SEPARATOR}}+[^{{TAG_END_CHAR}}]*)
-      scope: invalid.illegal.invalid-path -path-id-
+      scope: invalid.illegal.invalid-path -path-id-.handlebars
 
     - match: ({{NOT_IDENTIFIER_NOT_SPACE}}+[^{{TAG_END_CHAR}}]*)
-      scope: invalid.illegal.invalid-path -path-id-
+      scope: invalid.illegal.invalid-path -path-id-.handlebars
 
   -path-id-after-:
     # POP if we just passed a close tag.
@@ -855,14 +853,14 @@ contexts:
 
     # Subsequent Dotted Identifier
     - match: \s*\.{{IDENTIFIER}}
-      scope: variable.other.readwrite.path -path-id-after--dotted-
+      scope: variable.other.readwrite.path -path-id-after--dotted-.handlebars
 
     # Subsequent Dotted Bracketed Identifier
     - match: \s*\.\[
       push:
       # TODO: Fix double vars here.
-      - meta_scope: meta.path.segment-literal variable.other.readwrite.path -path-id-after--bracketed-
-      - meta_content_scope: variable.other.readwrite.path.path-literal -path-id-after--bracketed-
+      - meta_scope: meta.path.segment-literal variable.other.readwrite.path -path-id-after--bracketed-.handlebars
+      - meta_content_scope: variable.other.readwrite.path.path-literal -path-id-after--bracketed-.handlebars
       - include: -number-
       - match: \]
         pop: true
@@ -873,11 +871,11 @@ contexts:
         1: string.quoted.single punctuation.definition.string.quoted.single
       push:
       # TODO: Fix double vars here.
-      - meta_scope: meta.path.segment-literal variable.other.readwrite.path -path-id-after--bracketed-
-      - meta_content_scope: variable.other.readwrite.path.path-literal string.quoted.single -path-id-after--bracketed-
+      - meta_scope: meta.path.segment-literal variable.other.readwrite.path -path-id-after--bracketed-.handlebars
+      - meta_content_scope: variable.other.readwrite.path.path-literal string.quoted.single -path-id-after--bracketed-.handlebars
       - include: -number-
       - match: \'
-        scope: string.quoted.single punctuation.definition.string.quoted.single
+        scope: string.quoted.single punctuation.definition.string.quoted.single.handlebars
         pop: true
 
     # Subsequent Quoted Identifier
@@ -886,17 +884,17 @@ contexts:
         1: string.quoted.double punctuation.definition.string.quoted.double
       push:
       # TODO: Fix double vars here.
-      - meta_scope: meta.path.segment-literal  variable.other.readwrite.path -path-id-after--bracketed-
-      - meta_content_scope: variable.other.readwrite.path.path-literal variable.other.readwrite.path.path-literal string.quoted.double -path-id-after--bracketed-
+      - meta_scope: meta.path.segment-literal  variable.other.readwrite.path -path-id-after--bracketed-.handlebars
+      - meta_content_scope: variable.other.readwrite.path.path-literal variable.other.readwrite.path.path-literal string.quoted.double -path-id-after--bracketed-.handlebars
       - include: -number-
       - match: \"
-        scope: string.quoted.double punctuation.definition.string.quoted.double
+        scope: string.quoted.double punctuation.definition.string.quoted.double.handlebars
         pop: true
 
     # Subsequent Slash
     - match: \s*/
       set:
-      - meta_scope: meta.path-traversal -path-id-after--separator-
+      - meta_scope: meta.path-traversal -path-id-after--separator-.handlebars
 
       # POP if we just passed a close tag.
       - include: -after-tag-end-pop-
@@ -911,7 +909,7 @@ contexts:
 
       # BAD Subsequent Slash
       - match: \s*/
-        scope: invalid.illegal.invalid-path -path-id-after--separator-
+        scope: invalid.illegal.invalid-path -path-id-after--separator-.handlebars
         pop: true
 
       # BAD Tag End
@@ -929,14 +927,14 @@ contexts:
   -this-:
     - match: \s*(this)
       set:
-      - meta_content_scope: meta.path-traversal
+      - meta_content_scope: meta.path-traversal.handlebars
 
       - include: -slash-
 
       - match: \s*\.this
 
       - match: \s*\.(?=\[|{{IDENTIFIER_CHAR}})
-        scope: variable.other.readwrite -this-
+        scope: variable.other.readwrite -this-.handlebars
 
       - include: -identifier-
 
@@ -951,7 +949,7 @@ contexts:
   -slash-:
     - match: \s*(/)
       set:
-      - meta_content_scope: meta.path-traversal
+      - meta_content_scope: meta.path-traversal.handlebars
 
       - include: -this-
       - include: -dot-
@@ -962,7 +960,7 @@ contexts:
   -dot-:
     - match: \s*(\.\.?)(?=[/{{TAG_END_CHAR}}])
       set:
-      - meta_content_scope: meta.path-traversal
+      - meta_content_scope: meta.path-traversal.handlebars
 
       - include: -slash-
 
@@ -972,26 +970,26 @@ contexts:
   -id-:
     - match: \[
       push:
-      - meta_scope: bright.bluebird
+      - meta_scope: bright.bluebird.handlebars
       - match: \]
         pop: true
 
     - match: (?={{IDENTIFIER_CHAR}}|\.\.?{{LOOKAHEAD}})
       push:
-      - meta_scope: bright.bluebird
+      - meta_scope: bright.bluebird.handlebars
 
       - match: (?=\s*\.this\b)
         set:
         - match: \.this
-          scope: invalid
+          scope: invalid.handlebars
           pop: true
 
       - match: (?=\s*/)
         set:
-        - meta_scope: bright.orange
+        - meta_scope: bright.orange.handlebars
         - match: \s*/
         - match: \s*({{NON_IDENTIFIER_CHAR}}\S*)
-          scope: invalid.illegal
+          scope: invalid.illegal.handlebars
           pop: true
         - match: (?=\S)
           pop: true
@@ -1016,13 +1014,13 @@ contexts:
 
   -number-:
     - match: (-?)(\d+(\.\d+)?)
-      scope: constant.numeric
+      scope: constant.numeric.handlebars
 
   -boolean-:
     - match: (true)|(false)
       captures:
-        1: constant.language.boolean.true
-        2: constant.language.boolean.false
+        1: constant.language.boolean.true.handlebars
+        2: constant.language.boolean.false.handlebars
 
 
 
@@ -1033,12 +1031,12 @@ contexts:
 
     - match: (?=\/)
       set:
-      - meta_content_scope: invalid.illegal.invalid-path
+      - meta_content_scope: invalid.illegal.invalid-path.handlebars
       - include: -tag-end-
 
     - match: \s*\.\.?(?={{LOOKAHEAD}})
       push:
-      - meta_scope: meta.path-traversal
+      - meta_scope: meta.path-traversal.handlebars
       - include: -before-tag-end-pop-
       - match: \s*(?={{IDENTIFIER_CHAR}})
         pop: true
@@ -1047,28 +1045,28 @@ contexts:
     #   push:
     #   # Match any identifiers.
     #   - match: (this)(?={{NON_IDENTIFIER_CHAR}})
-    #     scope: variable.language
+    #     scope: variable.language.handlebars
     #     set:
-    #     - meta_scope: -identifier--this variable.other.readwrite
+    #     - meta_scope: -identifier--this variable.other.readwrite.handlebars
     #     - match: \s*/\s*(?=\.{{SEPARATOR}})
-    #       scope: meta.path-traversal
+    #       scope: meta.path-traversal.handlebars
     #       pop: true
     #     - match: \s*/\s*(?=this)
-    #       scope: meta.path-traversal
+    #       scope: meta.path-traversal.handlebars
     #       pop: true
     #     - match: \s*/\s*(?={{IDENTIFIER}})
-    #       scope: meta.path-traversal
+    #       scope: meta.path-traversal.handlebars
     #       pop: true
     #     - match: \s*/\s*(?=\..)
-    #       scope: meta.path-traversal
+    #       scope: meta.path-traversal.handlebars
     #       set:
     #       - include: -expect-tag-end-
     #     - match: \s*/
-    #       scope: -identifier--this--after meta.path-traversal
+    #       scope: -identifier--this--after meta.path-traversal.handlebars
     #       set:
     #       # We should never reach an end tag here.
     #       - match: ({{TAG_END}})
-    #         scope: invalid.illegal.expected-context-path
+    #         scope: invalid.illegal.expected-context-path.handlebars
     #         pop: true
     #     - include: -after-identifier-
     #   # If nothing matched, pop.
@@ -1080,7 +1078,7 @@ contexts:
     #   # Match any identifiers.
     #   - match: ({{IDENTIFIER}})
     #     push:
-    #     - meta_scope: -identifier--identifier variable.other.readwrite
+    #     - meta_scope: -identifier--identifier variable.other.readwrite.handlebars
     #     - include: -after-identifier-
     #   # If nothing matched, pop.
     #   - match: ''
@@ -1088,22 +1086,22 @@ contexts:
 
     # - match: \[
     #   push:
-    #   - meta_scope: -identifier--bracketed variable.other.readwrite
+    #   - meta_scope: -identifier--bracketed variable.other.readwrite.handlebars
     #   - match: \]
     #     set:
-    #     - meta_scope: variable.other.readwrite
+    #     - meta_scope: variable.other.readwrite.handlebars
     #     - include: -after-identifier-
 
     - match: this(?={{SEPARATOR}})
-      scope: variable.language.this -path-id--this-
+      scope: variable.language.this -path-id--this-.handlebars
       push:
-      - meta_content_scope: -path-id--this-
+      - meta_content_scope: -path-id--this-.handlebars
       - include: -path-id-after-
 
     - match: ({{IDENTIFIER}})(?={{SEPARATOR}})
-      scope: variable.other.readwrite.path -path-id--id-
+      scope: variable.other.readwrite.path -path-id--id-.handlebars
       push:
-      - meta_content_scope: -path-id--id--after- #bright.red-orange -path-id--id-
+      - meta_content_scope: -path-id--id--after- #bright.red-orange -path-id--id-.handlebars
       - include: -before-tag-end-pop-
       - match: (?=\s*\.this)
         pop: true
@@ -1111,23 +1109,23 @@ contexts:
 
     - match: \[
       push:
-      - meta_scope: variable.other.readwrite.path -path-id--bracketed-
+      - meta_scope: variable.other.readwrite.path -path-id--bracketed-.handlebars
       - match: \]
         set:
-        - meta_content_scope: -path-id--bracketed--after-
+        - meta_content_scope: -path-id--bracketed--after-.handlebars
         - include: -path-id-after-
 
     - match: ({{IDENTIFIER}}{{NOT_IDENTIFIER_NOT_SEPARATOR}}+[^{{TAG_END_CHAR}}]*)
-      scope: invalid.illegal.invalid-path -path-id-
+      scope: invalid.illegal.invalid-path -path-id-.handlebars
 
     - match: ({{NOT_IDENTIFIER_NOT_SPACE}}+[^{{TAG_END_CHAR}}]*)
-      scope: invalid.illegal.invalid-path -path-id-
+      scope: invalid.illegal.invalid-path -path-id-.handlebars
 
   -after-identifier-:
     # Separator slashes
     - match: \s*/
       push:
-      - meta_scope: -after-identifier--after-slash
+      - meta_scope: -after-identifier--after-slash.handlebars
       # Identifier
       - match: \s*{{IDENTIFIER}}
         pop: true
@@ -1141,13 +1139,13 @@ contexts:
     # Subsequent Dotted Identifier
     - match: \s*\.{{IDENTIFIER}}
       push:
-      - meta_scope: -after-identifier--after-dotted
+      - meta_scope: -after-identifier--after-dotted.handlebars
       - include: -after-identifier-
 
     # Subsequent Dotted, Bracketed Identifier
     - match: \s*\.\[
       push:
-      - meta_scope: -after-identifier--bracketed
+      - meta_scope: -after-identifier--bracketed.handlebars
       - match: \]
         pop: true
 
@@ -1167,15 +1165,15 @@ contexts:
   -subexpression-:
     - match: (\()[^)}~]*({{TAG_END}})
       captures:
-        1: punctuation.definition.subexpression.begin
-        2: invalid.illegal.expected-close-paren
+        1: punctuation.definition.subexpression.begin.handlebars
+        2: invalid.illegal.expected-close-paren.handlebars
 
     - match: \(
-      scope: punctuation.definition.subexpression.begin
+      scope: punctuation.definition.subexpression.begin.handlebars
       push:
-      - meta_scope: meta.subexpression
+      - meta_scope: meta.subexpression.handlebars
       - match: ({{IDENTIFIER}}(?:\s*[./]{{IDENTIFIER}})*) # TODO: match individual parts
-        scope: entity.name.function.helper # variable.function
+        scope: entity.name.function.helper # variable.function.handlebars
         push:
         - include: -before-tag-end-pop-
         - include: -subexpression-end-
@@ -1190,14 +1188,14 @@ contexts:
       - include: -subexpression-end-
   -subexpression-end-:
     - match: \)
-      scope: punctuation.definition.subexpression.end
+      scope: punctuation.definition.subexpression.end.handlebars
       pop: true
 
 
 
   -identifier-one-:
     - match: ({{IDENTIFIER}})
-      scope: variable.other.readwrite -identifier-one-
+      scope: variable.other.readwrite -identifier-one-.handlebars
       set:
       # Dotted paths named `this` are not allowed.
       - include: -unexpected-dotted-path-named-this-
@@ -1210,11 +1208,11 @@ contexts:
       - include: -separator-slash-
       - include: -expect-tag-end-
     - match: \@
-      scope: bright.bluebird
+      scope: bright.bluebird.handlebars
     - include: -identifier-path-literal-
   -identifier-one-dotted-:
     - match: (\.{{IDENTIFIER}})
-      scope: variable.other.readwrite -identifier-one-dotted-
+      scope: variable.other.readwrite -identifier-one-dotted-.handlebars
       set:
       # Subsequent identifiers immediately preceeded by a dot are allowed.
       - include: -identifier-one-dotted-
@@ -1224,7 +1222,7 @@ contexts:
       - include: -expect-tag-end-
   -before-identifier-one-pop-:
     - match: ({{IDENTIFIER}})
-      scope: variable.other.readwrite -identifier-one-
+      scope: variable.other.readwrite -identifier-one-.handlebars
       set:
       # Dotted paths named `this` are not allowed.
       - include: -unexpected-dotted-path-named-this-
@@ -1237,12 +1235,12 @@ contexts:
       - include: -separator-slash-
       #- include: -before-tag-end-pop-
     - match: \@
-      scope: bright.bluebird
+      scope: bright.bluebird.handlebars
     - include: -identifier-path-literal-
 
   -identifier-only-:
     - match: ({{IDENTIFIER}})
-      scope: variable.other.readwrite -identifier-only-
+      scope: variable.other.readwrite -identifier-only-.handlebars
       set:
       # Dotted paths named `this` are not allowed.
       - include: -unexpected-dotted-path-named-this-
@@ -1257,10 +1255,10 @@ contexts:
       - include: -expect-tag-end-
     - include: -identifier-path-literal-
     - match: \@
-      scope: bright.bluebird
+      scope: bright.bluebird.handlebars
   -identifier-only-dotted-:
     - match: ((\.?){{IDENTIFIER}})
-      scope: variable.other.readwrite -identifier-only-dotted-
+      scope: variable.other.readwrite -identifier-only-dotted-.handlebars
       # captures:
       #   2: punctuation.separator
       set:
@@ -1279,37 +1277,37 @@ contexts:
 
   -identifier-path-literal-:
     - match: \[
-      scope: punctuation.definition.path.literal.end
+      scope: punctuation.definition.path.literal.end.handlebars
       set:
-      - meta_scope: meta.path.literal -identifier-path-literal-
+      - meta_scope: meta.path.literal -identifier-path-literal-.handlebars
 
       - match: (\d+)
-        scope: constant.numeric
+        scope: constant.numeric.handlebars
 
       - match: ([^]]+)
-        scope: variable.other.readwrite
+        scope: variable.other.readwrite.handlebars
 
       - match: (])
-        scope: punctuation.definition.path.literal.end
+        scope: punctuation.definition.path.literal.end.handlebars
         set:
         - include: -separator-slash-
         - include: -expect-tag-end-
   -identifier-path-literal-dotted-:
     - match: (\.)(\[)
       captures:
-        1: variable.other.readwrite
-        2: punctuation.definition.path.literal.end
+        1: variable.other.readwrite.handlebars
+        2: punctuation.definition.path.literal.end.handlebars
       push:
-      - meta_scope: meta.path.literal -identifier-path-literal-dotted-
+      - meta_scope: meta.path.literal -identifier-path-literal-dotted-.handlebars
 
       - match: (\d+)
-        scope: constant.numeric
+        scope: constant.numeric.handlebars
 
       - match: ([^]]+)
-        scope: variable.other.readwrite
+        scope: variable.other.readwrite.handlebars
 
       - match: (])
-        scope: punctuation.definition.path.literal.end
+        scope: punctuation.definition.path.literal.end.handlebars
         pop: true
 
 
@@ -1321,10 +1319,10 @@ contexts:
 
     - match: (\@)(\s*)
       captures:
-        1: constant.character.data-variable
-        2: meta.path-traversal
+        1: constant.character.data-variable.handlebars
+        2: meta.path-traversal.handlebars
       push:
-      - meta_scope: variable.language.data -data-var- #-data-var--content-
+      - meta_scope: variable.language.data -data-var- #-data-var--content-.handlebars
 
       - match: ^\s*
 
@@ -1348,21 +1346,21 @@ contexts:
 
     # Dot(s)
     - match: \.\.?(?={{LOOKAHEAD}})
-      #scope: meta.path-traversal -data-var-path-
+      #scope: meta.path-traversal -data-var-path-.handlebars
       push:
-      - meta_scope: meta.path-traversal -data-var-path--after-
+      - meta_scope: meta.path-traversal -data-var-path--after-.handlebars
       #- include: -before-tag-end-pop-
 
       # Subsequent Slash
       - include: -data-var-path-slash-
       # - match: \s*/
       #   push:
-      #   - meta_scope: bright.red-orange
+      #   - meta_scope: bright.red-orange.handlebars
       #   - match: \s*/
-      #     scope: invalid.illegal
+      #     scope: invalid.illegal.handlebars
       #     pop: true
       #   - match: \s*\.\.?(?={{LOOKAHEAD}})
-      #     scope: bright.yellow
+      #     scope: bright.yellow.handlebars
       #     pop: true
       #   - match: (?=\s*\S)
       #     pop: true
@@ -1377,13 +1375,13 @@ contexts:
   -data-var-path-slash-:
     # Slash
     - match: \s*/
-      scope: meta.path-traversal -data-var-path-slash-
+      scope: meta.path-traversal -data-var-path-slash-.handlebars
       set:
-      - meta_content_scope: meta.path-traversal -data-var-path-slash--after-
+      - meta_content_scope: meta.path-traversal -data-var-path-slash--after-.handlebars
 
       # Dots (Again)
       - match: \s*(?=\.\.?)
-        scope: meta.path-traversal -data-var-path-slash--dots- # bridge the gap between `/` and `.`
+        scope: meta.path-traversal -data-var-path-slash--dots- # bridge the gap between `/` and `.`.handlebars
         pop: true
 
       # Identifiers
@@ -1393,13 +1391,13 @@ contexts:
 
       # BAD Subsequent Slash
       - match: \s*/
-        scope: invalid.illegal.invalid-path
+        scope: invalid.illegal.invalid-path.handlebars
         pop: true
 
       # BAD Tag End
       - match: \s*({{TAG_END}})
         captures:
-          1: invalid.illegal.expected-context-path
+          1: invalid.illegal.expected-context-path.handlebars
         pop: true
 
       - include: -before-unmatched-char-pop-
@@ -1417,31 +1415,31 @@ contexts:
         6: variable.language.data.keyword.root -data-var-path-id--keyword-
         7: variable.language.data.keyword.this -data-var-path-id--keyword-
       set:
-      - meta_scope: -data-var-path-id--this--after-
+      - meta_scope: -data-var-path-id--this--after-.handlebars
       # - match: (?=\s*\.((first)|(index)|(key)|(last)|(root)|(this)))
       - match: (?=\s*\.this)
         pop: true
       - include: -data-var-path-id-after-
 
     - match: ({{IDENTIFIER}})(?={{SEPARATOR}})
-      scope: variable.other.readwrite.path -data-var-path-id--id-
+      scope: variable.other.readwrite.path -data-var-path-id--id-.handlebars
       set:
-      - meta_scope: -data-var-path-id--id--after-
+      - meta_scope: -data-var-path-id--id--after-.handlebars
       - include: -data-var-path-id-after-
 
     - match: \[
       set:
-      - meta_scope: variable.other.readwrite.path -data-var-path-id--bracketed-
+      - meta_scope: variable.other.readwrite.path -data-var-path-id--bracketed-.handlebars
       - match: \]
         set:
-        - meta_scope: -data-var-path-id--id-bracketed--after-
+        - meta_scope: -data-var-path-id--id-bracketed--after-.handlebars
         - include: -data-var-path-id-after-
 
     - match: ({{IDENTIFIER}}{{NOT_IDENTIFIER_NOT_SEPARATOR}}+[^{{TAG_END_CHAR}}]*)
-      scope: invalid.illegal.invalid-path -path-id-
+      scope: invalid.illegal.invalid-path -path-id-.handlebars
 
     - match: ({{NOT_IDENTIFIER_NOT_SPACE}}+[^{{TAG_END_CHAR}}]*)
-      scope: invalid.illegal.invalid-path -path-id-
+      scope: invalid.illegal.invalid-path -path-id-.handlebars
 
   -data-var-path-id-after-:
     # POP if we just passed a close tag.
@@ -1450,12 +1448,12 @@ contexts:
 
     # Subsequent Dotted Identifier
     - match: \s*\.{{IDENTIFIER}}
-      scope: variable.other.readwrite.path -data-var-path-id-after--dotted-
+      scope: variable.other.readwrite.path -data-var-path-id-after--dotted-.handlebars
 
     # Subsequent Dotted Bracketed Identifier
     - match: \s*\.\[
       push:
-      - meta_scope: variable.other.readwrite.path -data-var-path-id-after--bracketed-
+      - meta_scope: variable.other.readwrite.path -data-var-path-id-after--bracketed-.handlebars
       - match: \]
         pop: true
 
@@ -1468,43 +1466,43 @@ contexts:
 
   -string-quoted-double-:
     - match: (?<=[{\s=]|^)(")
-      scope: punctuation.definition.string.quoted.double
+      scope: punctuation.definition.string.quoted.double.handlebars
       push:
-      - meta_scope: string.quoted.double
+      - meta_scope: string.quoted.double.handlebars
       - include: -escape-char- #- include: -before-tag-end-pop-
       - match: (")
-        scope: punctuation.definition.string.quoted.double
+        scope: punctuation.definition.string.quoted.double.handlebars
         pop: true
 
   -string-quoted-single-:
     - match: (?<=[{\s=]|^)(')
-      scope: punctuation.definition.string.quoted.single
+      scope: punctuation.definition.string.quoted.single.handlebars
       push:
-      - meta_scope: string.quoted.single
+      - meta_scope: string.quoted.single.handlebars
       - include: -escape-char- #- include: -before-tag-end-pop-
       - match: (')
-        scope: punctuation.definition.string.quoted.single
+        scope: punctuation.definition.string.quoted.single.handlebars
         pop: true
 
   -string-quoted-single-one-:
     - match: (')
-      scope: punctuation.definition.string.quoted.single
+      scope: punctuation.definition.string.quoted.single.handlebars
       push:
-      - meta_scope: string.quoted.single
+      - meta_scope: string.quoted.single.handlebars
       - include: -escape-char- #- include: -before-tag-end-pop-
       - match: (')
-        scope: punctuation.definition.string.quoted.single
+        scope: punctuation.definition.string.quoted.single.handlebars
         set:
         - include: -expect-tag-end-
 
   -string-quoted-double-one-:
     - match: (")
-      scope: punctuation.definition.string.quoted.double
+      scope: punctuation.definition.string.quoted.double.handlebars
       push:
-      - meta_scope: string.quoted.double
+      - meta_scope: string.quoted.double.handlebars
       - include: -escape-char- #- include: -before-tag-end-pop-
       - match: (")
-        scope: punctuation.definition.string.quoted.double
+        scope: punctuation.definition.string.quoted.double.handlebars
         set:
         - include: -expect-tag-end-
 
@@ -1513,15 +1511,15 @@ contexts:
   -expect-this-:
     - match: (\s*)\b(this)
       captures:
-        1: meta.path-traversal
-        2: variable.language.this
+        1: meta.path-traversal.handlebars
+        2: variable.language.this.handlebars
       set:
-      - meta_content_scope: meta.path-traversal
+      - meta_content_scope: meta.path-traversal.handlebars
 
       # Unexpected `this`
       - match: (?=\s*this)
         set:
-        - meta_content_scope: unexpected-this
+        - meta_content_scope: unexpected-this.handlebars
         - include: -expect-tag-end-
 
       # Special case for `.this` (continue looking for context path slashes and dots)
@@ -1532,7 +1530,7 @@ contexts:
       # Unexpected dot
       - match: (?=\s*\.{{NON_IDENTIFIER_CHAR}})
         set:
-        - meta_scope: unexpected-dot
+        - meta_scope: unexpected-dot.handlebars
         - include: -expect-tag-end-
 
       - include: -expect-slash-
@@ -1543,9 +1541,9 @@ contexts:
 
   -expect-dot-:
     - match: \s*\.\.?(?=[/{{TAG_END_CHAR}}])
-      scope: meta.path-traversal
+      scope: meta.path-traversal.handlebars
       set:
-      - meta_content_scope: meta.path-traversal
+      - meta_content_scope: meta.path-traversal.handlebars
 
 
       - include: -unexpected-identifier-
@@ -1556,12 +1554,12 @@ contexts:
   -expect-slash-:
     - match: /
       set:
-      - meta_content_scope: meta.path-traversal -expect-slash-
+      - meta_content_scope: meta.path-traversal -expect-slash-.handlebars
 
       # Unexpected slash
       # - match: (?=\s*/)
       #   set:
-      #   - meta_scope: unexpected-slash
+      #   - meta_scope: unexpected-slash.handlebars
       #   - include: -expect-tag-end-
 
       # `this`
@@ -1583,7 +1581,7 @@ contexts:
       # Unexpected tag end
       - match: \s*({{TAG_END}})
         captures:
-          1: invalid.illegal.expected-context-path
+          1: invalid.illegal.expected-context-path.handlebars
         pop: true
 
       # Non-Identifier Char
@@ -1594,7 +1592,7 @@ contexts:
       # Unexpected sub-path
       # - match: (?={{NON_IDENTIFIER_CHAR}})
       #   set:
-      #   - meta_scope: unexpected-sub-path
+      #   - meta_scope: unexpected-sub-path.handlebars
       #   # TODO: Make a separate one of these with the correct error message.
       #   - include: -expect-tag-end-
 
@@ -1605,20 +1603,20 @@ contexts:
   -separator-slash-:
     - match: (?=/[^!"#%&''()*+,./;<=>@\\\]^`{|}~])
       set:
-      - meta_scope: meta.path-traversal # colors the slash itself
+      - meta_scope: meta.path-traversal # colors the slash itself.handlebars
       - include: -expect-slash-
 
   -escape-char-:
     - match: (\\.)
-      scope: constant.character.escape
+      scope: constant.character.escape.handlebars
 
 
 
   -tag-end-:
     - match: (?:\s*{{TAG_END}})
       captures:
-        1: punctuation.definition.tag.template.end
-      # scope: bright.yellow
+        1: punctuation.definition.tag.template.end.handlebars
+      # scope: bright.yellow.handlebars
       pop: true
 
   -before-tag-end-pop-:
@@ -1639,7 +1637,7 @@ contexts:
     - include: -before-tag-end-pop-
     #- include: -tag-end-
     - match: ({{NOT_TAG_END}})
-      scope: invalid.illegal.expected-tag-end
+      scope: invalid.illegal.expected-tag-end.handlebars
       set:
       - include: -expect-tag-end-
 
@@ -1662,7 +1660,7 @@ contexts:
   -expect-identifier-dotted-only-:
     - match: (?=\s*\.{{IDENTIFIER}})
       set:
-      #- meta_scope: meta.identifier
+      #- meta_scope: meta.identifier.handlebars
 
       # For subsequent `.foo` matches, determine if the dot is followed by a non-identifier char.
       - match: (?=\.{{NON_IDENTIFIER_CHAR}})
@@ -1677,7 +1675,7 @@ contexts:
       # anything following it -- as invalid (until the tag end).
       - match: (?=[^.{{TAG_END_CHAR}}])
         set:
-        - meta_scope: invalid-identifier-character
+        - meta_scope: invalid-identifier-character.handlebars
         - include: -expect-tag-end-
 
       # Dotted paths named `this` are not allowed.
@@ -1685,7 +1683,7 @@ contexts:
 
       # Match an identifier.
       - match: \.?{{IDENTIFIER}}
-        scope: variable.other.readwrite -expect-identifier-dotted-only-
+        scope: variable.other.readwrite -expect-identifier-dotted-only-.handlebars
 
       - include: -tag-end-
 
@@ -1693,7 +1691,7 @@ contexts:
   -unexpected-identifier-:
     - match: (?={{IDENTIFIER}})
       set:
-      - meta_scope: unexpected-identifier
+      - meta_scope: unexpected-identifier.handlebars
       - include: -expect-tag-end-
 
   -unexpected-dotted-path-named-this-:
@@ -1701,5 +1699,5 @@ contexts:
     # Dotted paths named `this` are not allowed.
     - match: (?=\.?this)
       set:
-      - meta_scope: paths-named-this-not-allowed
+      - meta_scope: paths-named-this-not-allowed.handlebars
       - include: -expect-tag-end-
