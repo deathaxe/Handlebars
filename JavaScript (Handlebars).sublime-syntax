@@ -1,0 +1,21 @@
+%YAML 1.2
+---
+# http://www.sublimetext.com/docs/syntax.html
+name: JavaScript (Handlebars)
+scope: source.js.handlebars
+version: 2
+
+extends: Packages/JavaScript/JavaScript.sublime-syntax
+
+file_extensions:
+  - handlebars.js
+
+contexts:
+
+  prototype:
+    - meta_prepend: true
+    - include: HTML (Handlebars).sublime-syntax#handlebars-embedded
+
+  string-content:
+    - meta_prepend: true
+    - include: HTML (Handlebars).sublime-syntax#handlebars-interpolations

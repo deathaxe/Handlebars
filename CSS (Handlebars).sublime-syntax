@@ -1,0 +1,21 @@
+%YAML 1.2
+---
+# http://www.sublimetext.com/docs/syntax.html
+name: CSS (Handlebars)
+scope: source.css.handlebars
+version: 2
+
+extends: Packages/CSS/CSS.sublime-syntax
+
+file_extensions:
+  - handlebars.css
+
+contexts:
+
+  prototype:
+    - meta_prepend: true
+    - include: HTML (Handlebars).sublime-syntax#handlebars-embedded
+
+  string-content:
+    - meta_prepend: true
+    - include: HTML (Handlebars).sublime-syntax#handlebars-interpolations
