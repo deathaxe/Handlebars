@@ -14,8 +14,8 @@ contexts:
 
   prototype:
     - meta_prepend: true
-    - include: HTML (Handlebars).sublime-syntax#handlebars-embedded
+    - include: Handlebars.sublime-syntax#handlebars-embedded
 
   string-content:
     - meta_prepend: true
-    - include: HTML (Handlebars).sublime-syntax#handlebars-interpolations
+    - include: Handlebars.sublime-syntax#handlebars-interpolations
